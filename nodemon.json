@@ -1,0 +1,21 @@
+{
+    "watch": [
+        "src",
+        ".env"
+    ],
+    "ext": "ts,json,env",
+    "ignore": [
+        "src/**/*.spec.ts",
+        "dist",
+        "node_modules"
+    ],
+    "exec": "ts-node -r tsconfig-paths/register src/main.ts",
+    "execMap": {
+        "ts": "ts-node"
+    },
+    "env": {
+        "NODE_ENV": "development"
+    },
+    "delay": 1000,
+    "verbose": true
+}

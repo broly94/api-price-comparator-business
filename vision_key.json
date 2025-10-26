@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "comparador-precios-01",
+  "private_key_id": "221eb918baccae00e364fed7a4a33dbf42b66801",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDUWnSZ5Ylntmye\nFMoUQF7iBKhPcqCOtwcVE1AVZxIK5+dlo5niY39E/GRpJQDF0yYT6t587HFWzUdd\n8v11wVBtxVuGG2eC7TuU82sa6fzIZJ7SiRZq100q5RrHgR5m7Rk1qSkJVXMgX0vy\nTuYph8J+p7+2rqSoTwlYrXnu3yk4HI8jbqiYo6Jp+R1MUtOjDbMywRIEwI1d3CtP\nVeCfLkb/YLSTjgNwSyODag/BaL8kPCs02LquUICwLi7P0swkjzefmQRNbD2yD6Mi\nUSZM+TV2hauvMb/glCEwLfqmKkL5TGCusbOa1n+wo6EZAGSS325qK3sme3ct2Nnf\nK1yOCJcHAgMBAAECggEAGwtcHz9y9PDwO1/FbrfV/a3/K4MbPKHFtqLrh5ZFX3sy\nZqjjz8fBLS2BsjxisU8XYeD/LeTE+HuTU70/F3CjyB8i7VzvHWcOOAWaRea36WOb\nMJAB+WBrNQPRmcfxccVPeRyOm+A0ldJdL0JqIK7oD85YZbEvSjoqpA8P4OKt8rXB\nB2uwVipbBvWJXw5QTkDn6LraWSHhe9FktXmg7mrSB+1ECQ2igIyUq7TY0lGMmGGp\n0AAsQwsM3zTv/zb3RhtSfY5Tvhm0kXS6qzNDfVu/9HeChNzBRIphNmLivANFO0Y+\nBSjPcKvq64GtBPJYaowf/queVsEzeOBAkhYU+XhnDQKBgQDqHQqjAfkn0QQTSL1W\nRFyprubfQlapmZWL3T29GLZbVtCDavvBJKm+CNcPj/PL34Qc8DFTei6agYg7RIfp\nb0uLdtjzn6jc52AE4IFfwXMuwAO76J0P9fX4WUkWKx/xFOHwO7QmBGSD1RaHY8TS\ntJIPybQuJF+t+VK+7c8mriCu/QKBgQDoNKL/eVp3XgkC8P3G9tTLkdiKJKHYrD+d\nEpp69+osccpFDfVjPxFjBCqMR8Y7hHJNfhY6CH4Zs9hiasQ4+DO4Zp7O3B/0eGKZ\nHyuR1Q0cAfXr5lFEY2nDyKzCh8TTdnl1kwg1WKGRYjoaOcDTld7AXjJZ1TRFLVrr\n3fDAN423UwKBgD2J8sDUhPTlaWfUSAjEIYNs+T0YiAU+3OON/WuWcmDiGh9hYNnt\nVD0iv71UfqZJk8WzkZO620M7516E7iD7Y2U+kVrAzjd7Dm9ZwEg2ZpuUV6buR1Lp\nuYVVmvOb1GKftaBbYUhZAT7yJWDjZdppIrfJsnYqk4f8sLaFdl1ZijfVAoGBAMwQ\n7ipsgLekmXDPT4eahpo8mzuUQ/QCNImavs5Qr6jNe8BCKyREWchV8fqEXU8S78zw\ngSIRMpjt971OLRIP9owZC3mp9B9J6QS+YvDvdmzlwDTHnSXn5BwecM0oui5I0Scl\nxzHyqVL2Ky+/D5oi/La8Ua2m9B/TYzMkQh76831nAoGAHTnob6Fnm3oBNAr2bC5K\nnQr9qx+puy0caVLaIFhqkZyGXRTbwcgcL731vnfQ8ZFrGmReusHkd5IM1grbDxVZ\nVU1jt0ebiAd4cFKbawua9aV7RshhtdD9Mf8gyLQ0J3uBjpuvwY0rFJB+ljS43gQs\nYuLz/XjfLQpGBhPtDbiR9oI=\n-----END PRIVATE KEY-----\n",
+  "client_email": "leoneldev-tech@comparador-precios-01.iam.gserviceaccount.com",
+  "client_id": "117047205138789221920",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/leoneldev-tech%40comparador-precios-01.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
