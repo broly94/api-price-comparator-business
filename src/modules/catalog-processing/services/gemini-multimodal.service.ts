@@ -18,12 +18,6 @@ export class GeminiMultimodalService {
     try {
       const apiKey = this.configService.get('GOOGLE_GEMINI_API_KEY');
 
-      if (apiKey) {
-        this.logger.debug(
-          `Gemini API Key (Length: ${apiKey.length}): "${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}"`,
-        );
-      }
-
       if (!apiKey) {
         this.logger.warn('GOOGLE_GEMINI_API_KEY not found');
         return;
