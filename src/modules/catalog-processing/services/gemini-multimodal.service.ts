@@ -25,7 +25,9 @@ export class GeminiMultimodalService {
 
       this.genAI = new GoogleGenAI({ apiKey });
       this.isConfigured = true;
-      this.logger.log('✅ Gemini Multimodal service configured successfully');
+      this.logger.log(
+        '✅ Gemini Multimodal service configured successfully model flash',
+      );
     } catch (error) {
       this.logger.error('❌ Failed to initialize Gemini Multimodal:', error);
     }

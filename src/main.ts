@@ -19,7 +19,7 @@ async function bootstrap() {
   app.enableCors();
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`🚀 Price Comparison API running on http://localhost:${port}`);
   logger.log(`📚 API Documentation: http://localhost:${port}/api`);
