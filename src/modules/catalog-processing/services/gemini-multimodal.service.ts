@@ -18,6 +18,12 @@ export class GeminiMultimodalService {
     try {
       const apiKey = this.configService.get('GOOGLE_GEMINI_API_KEY');
 
+      if (apiKey) {
+        this.logger.debug(
+          `Gemini API Key (Length: ${apiKey.length}): "${apiKey.substring(0, 5)}...${apiKey.substring(apiKey.length - 5)}"`,
+        );
+      }
+
       if (!apiKey) {
         this.logger.warn('GOOGLE_GEMINI_API_KEY not found');
         return;
@@ -50,7 +56,7 @@ export class GeminiMultimodalService {
 
       // LLAMADA MULTIMODAL CORRECTA con base64
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.0-flash-exp', // Modelo multimodal
+        model: 'gemini-2.5-flash', // Modelo multimodal
         contents: [
           {
             role: 'user',
