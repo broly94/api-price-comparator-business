@@ -56,7 +56,7 @@ export class GeminiMultimodalService {
 
       // LLAMADA MULTIMODAL CORRECTA con base64
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-pro', // Modelo multimodal
+        model: 'gemini-2.0-flash', // Modelo multimodal
         contents: [
           {
             role: 'user',
