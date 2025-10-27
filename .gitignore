@@ -17,7 +17,6 @@ jest.config.js
 tsconfig.json
 .eslintrc.js
 .prettierrc
-Dockerfile
 .nyc_output
 coverage
 .cache
