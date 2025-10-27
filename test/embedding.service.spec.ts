@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { EmbeddingService } from '../catalog-processing/services/embedding.service';
+import { EmbeddingService } from '../src/modules/catalog-processing/services/embedding.service';
 
 describe('EmbeddingService', () => {
   let service: EmbeddingService;

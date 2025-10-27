@@ -27,6 +27,19 @@
       "@modules/*": ["src/modules/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "test/qdrant.controller.spec.ts",
+    "test/qdrant.service.spec.ts",
+    "test/product-normalization.service.spec.ts",
+    "test/image-preprocessor.service.spec.ts",
+    "test/gpt4.service.spec.ts",
+    "test/google-vision.service.spec.ts",
+    "test/gemini.service.spec.ts",
+    "test/gemini-multimodal.service.spec.ts",
+    "test/excel-processing.service.spec.ts",
+    "test/embedding.service.spec.ts",
+    "test/catalog-processing.controller.spec.ts"
+  ],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

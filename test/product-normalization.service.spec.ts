@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProductNormalizationService } from '../catalog-processing/services/product-normalization.service';
+import { ProductNormalizationService } from '../src/modules/catalog-processing/services/product-normalization.service';
 
 describe('ProductNormalizationService', () => {
   let service: ProductNormalizationService;

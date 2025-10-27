@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { QdrantController } from '../catalog-processing/qdrant.controller';
+import { QdrantController } from '../src/modules/catalog-processing/qdrant.controller';
 
 describe('QdrantController', () => {
   let controller: QdrantController;

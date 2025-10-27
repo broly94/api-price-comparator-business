@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GeminiMultimodalService } from '../catalog-processing/services/gemini-multimodal.service';
+import { GeminiMultimodalService } from '../src/modules/catalog-processing/services/gemini-multimodal.service';
 
 describe('GeminiMultimodalService', () => {
   let service: GeminiMultimodalService;

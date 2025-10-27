@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { QdrantService } from '../catalog-processing/services/qdrant.service';
+import { QdrantService } from '../src/modules/catalog-processing/services/qdrant.service';
 
 describe('QdrantService', () => {
   let service: QdrantService;

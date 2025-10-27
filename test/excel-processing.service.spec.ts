@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ExcelProcessingService } from '../catalog-processing/services/excel-processing.service';
+import { ExcelProcessingService } from '../src/modules/catalog-processing/services/excel-processing.service';
 
 describe('ExcelProcessingService', () => {
   let service: ExcelProcessingService;

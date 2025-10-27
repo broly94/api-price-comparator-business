@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ImagePreprocessorService } from '../catalog-processing/services/image-preprocessor.service';
+import { ImagePreprocessorService } from '../src/modules/catalog-processing/services/image-preprocessor.service';
 
 describe('ImagePreprocessorService', () => {
   let service: ImagePreprocessorService;

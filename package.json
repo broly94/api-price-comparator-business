@@ -14,7 +14,9 @@
     "dev": "nodemon --watch src --ext ts --exec nest start",
     "dev:pnpm": "nodemon --watch src --ext ts --exec nest start",
     "clean": "rm -rf dist node_modules",
-    "install:clean": "pnpm install --force"
+    "install:clean": "pnpm install --force",
+    "docker:build": "npm run build",
+    "docker:start": "node dist/main"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",

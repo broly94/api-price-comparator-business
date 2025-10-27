@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CatalogProcessingController } from '../catalog-processing/catalog-processing.controller';
+import { CatalogProcessingController } from '../src/modules/catalog-processing/catalog-processing.controller';
 
 describe('CatalogProcessingController', () => {
   let controller: CatalogProcessingController;
