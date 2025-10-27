@@ -35,6 +35,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends libvips \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copiar package.json
 COPY package.json ./
 
