@@ -42,7 +42,7 @@ export class QdrantService implements VectorDbService, OnModuleInit {
 
       this.client = new QdrantClient({
         url,
-        apiKey,
+        //apiKey,
       });
 
       // Verificar conexión

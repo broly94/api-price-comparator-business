@@ -54,3 +54,23 @@ RUN groupadd -r nodejs && useradd -r -g nodejs nestjs
 USER nestjs
 
 CMD ["node", "dist/main"]
+
+# --- NUEVO STAGE DE DESARROLLO (DEBE AGREGARSE AL FINAL) ---
+FROM node:18-slim AS development
+
+WORKDIR /app
+
+# Instalar dependencias de desarrollo (incluyendo nodemon y typescript)
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Copiar configuración de NestJS
+COPY tsconfig.json ./
+
+# Exponer el puerto de la aplicación (3002) y el puerto de debug (9229)
+EXPOSE 3002
+EXPOSE 9229
+
+# Crear usuario de menor privilegio (Opcional, pero bueno para consistencia)
+RUN groupadd -r nodejs && useradd -r -g nodejs nestjs
+USER nestjs
