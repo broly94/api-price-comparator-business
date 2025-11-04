@@ -234,7 +234,7 @@ export class CatalogProcessingController {
         try {
           // 🎯 CAMBIO AQUÍ: Usamos el nuevo método para crear el texto de consulta
           const textoParaEmbedding = this.buildQueryTextForEmbedding(producto); // buildExactFilters debe filtrar SÓLO por peso, como lo tienes.
-
+          console.log(textoParaEmbedding);
           // FILTROS EXACTOS: solo unidad (peso)
           const filters = this.buildExactFilters(producto);
 
