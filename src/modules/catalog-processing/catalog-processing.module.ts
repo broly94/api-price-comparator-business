@@ -12,6 +12,7 @@ import { ExcelProcessingService } from './services/excel-processing.service';
 //import { GeminiService } from './services/gemini.service';
 import { ProductNormalizationService } from './services/product-normalization.service';
 import { QdrantController } from './qdrant.controller';
+import { EtlProxyService } from './services/etl-proxy.service';
 
 @Module({
   imports: [ConfigModule],
@@ -26,6 +27,7 @@ import { QdrantController } from './qdrant.controller';
     QdrantService,
     ExcelProcessingService,
     ProductNormalizationService,
+    EtlProxyService,
   ],
   exports: [],
 })

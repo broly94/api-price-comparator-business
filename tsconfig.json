@@ -39,7 +39,8 @@
     "test/gemini-multimodal.service.spec.ts",
     "test/excel-processing.service.spec.ts",
     "test/embedding.service.spec.ts",
-    "test/catalog-processing.controller.spec.ts"
+    "test/catalog-processing.controller.spec.ts",
+    "test/etl-proxy.service.spec.ts"
   ],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

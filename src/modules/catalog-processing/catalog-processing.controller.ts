@@ -25,9 +25,9 @@ import {
   ProcessCatalogResponse,
 } from '@/common/interfaces/catalog-processing.interface';
 import { ExcelProcessingService } from '@/modules/catalog-processing/services/excel-processing.service';
-import { ProductNormalizationService } from '@/modules/catalog-processing/services/product-normalization.service';
 import { EmbeddingService } from './services/embedding.service';
 import { QdrantService } from './services/qdrant.service';
+import { EtlProxyService } from './services/etl-proxy.service';
 
 @Controller('catalog-processing')
 export class CatalogProcessingController {
@@ -37,7 +37,7 @@ export class CatalogProcessingController {
     private imagePreprocessor: ImagePreprocessorService,
     private geminiMultimodalService: GeminiMultimodalService,
     private excelProcessingService: ExcelProcessingService,
-    private productNormalizationService: ProductNormalizationService,
+    private etlProxyService: EtlProxyService,
     private embeddingService: EmbeddingService,
     private qdrantService: QdrantService,
   ) {}
@@ -117,7 +117,7 @@ export class CatalogProcessingController {
         body.company,
       );
 
-      const processingTime = Date.now() - startTime;
+      const processingTime = (Date.now() - startTime) / 1000;
 
       this.logger.log(
         `🎉 MULTIMODAL Complete: ${products.length} products found in ${processingTime}ms`,
@@ -131,7 +131,7 @@ export class CatalogProcessingController {
           processingTime,
           company: body.company,
           method: 'multimodal_visual_analysis',
-          model: 'gemini-2.0-flash-exp',
+          model: 'gemini-2.0-flash',
         },
       };
     } catch (error) {
@@ -144,7 +144,7 @@ export class CatalogProcessingController {
   }
 
   /**
-   * NUEVO ENDPOINT - SUBIR EXCEL A VECTOR DB
+   * NUEVO ENDPOINT - SUBIR EXCEL A VECTOR DB (PROXY)
    */
   @Post('upload-excel')
   @UseInterceptors(FileInterceptor('excel'))
@@ -155,7 +155,7 @@ export class CatalogProcessingController {
     message: string;
   }> {
     try {
-      this.logger.log(`📤 Processing Excel upload: ${excelFile.originalname}`);
+      this.logger.log(`📤 Proxying Excel upload: ${excelFile.originalname}`);
 
       if (!excelFile) {
         throw new BadRequestException('Excel file is required');
@@ -171,22 +171,24 @@ export class CatalogProcessingController {
         );
       }
 
-      const result = await this.excelProcessingService.processExcelFromBuffer(
-        excelFile.buffer,
-      );
+      // 🎯 NUEVO PASO: Llamar al servicio proxy que enviará el archivo a FastAPI
+      const result =
+        await this.etlProxyService.sendExcelToEtlService(excelFile);
 
       return {
         success: true,
         processed: result.processed,
         total: result.total,
-        message: `Successfully processed ${result.processed} products into vector database`,
+        message: `Successfully processed ${result.processed} products into vector database via ETL Service`,
       };
     } catch (error) {
-      this.logger.error('Error processing Excel upload:', error);
-      throw new HttpException(
-        `Excel processing failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+      this.logger.error(
+        'Error processing Excel upload (PROXY failed):',
+        error.message,
       );
+
+      // Re-lanzar la excepción. Si viene del proxy, ya es una HttpException con el status correcto
+      throw error;
     }
   }
 
