@@ -1,14 +1,12 @@
 {
   "name": "RAG IA Backend Dev",
-  // Le dice a VS Code que construya una imagen de Docker usando nuestro Dockerfile de desarrollo.
-  "build": {
-    "dockerfile": "../Dockerfile.dev",
-    "context": ".."
-  },
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "backend",
+  "workspaceFolder": "/usr/src/app",
 
   // Mapea el puerto 3000 del contenedor al puerto 3000 de tu máquina local.
   // Cambia el puerto si tu aplicación NestJS corre en uno diferente.
-  "forwardPorts": [3000],
+  "forwardPorts": [3002],
 
   // Carga las variables de entorno desde tu archivo .env.development.
   // VS Code buscará este archivo en la raíz de tu proyecto local.
@@ -24,10 +22,10 @@
         "firsttris.vscode-jest-runner" // Para ejecutar tests de Jest fácilmente
       ]
     }
-  },
+  }
 
-  // Comando a ejecutar después de que el contenedor se haya creado.
-  "postCreateCommand": "npm install",
+  // El comando postCreateCommand ya no es necesario aquí, porque las dependencias
+  // se manejan en la imagen de Docker y el volumen.
 
   // Descomenta la siguiente línea si quieres que el contenedor se mantenga corriendo
   // incluso después de cerrar VS Code.

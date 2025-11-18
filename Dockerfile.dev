@@ -5,12 +5,12 @@ FROM node:20-slim
 WORKDIR /usr/src/app
 
 # Copia package.json y package-lock.json (o pnpm-lock.yaml, etc.)
-# Esto aprovecha el cache de capas de Docker. La reinstalación de dependencias
-# solo ocurrirá si estos archivos cambian.
 COPY package*.json ./
 
-# Instala git
-RUN apt-get update && apt-get install -y git
+# Instala git y procps (necesario para el comando 'ps' que usa el watcher/nodemon).
+RUN apt-get update && \
+    apt-get install -y git procps && \
+    rm -rf /var/lib/apt/lists/*
 
 # Instala TODAS las dependencias, incluyendo las de desarrollo.
 RUN npm install
@@ -19,6 +19,4 @@ RUN npm install
 COPY . .
 
 # El comando por defecto para iniciar el contenedor.
-# Ejecuta el script "start:dev" que usa nodemon (a través de "nest start --watch")
-# para reiniciar la aplicación cuando detecta cambios en los archivos.
 CMD ["npm", "run", "start:dev"]
