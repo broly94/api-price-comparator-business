@@ -10,6 +10,7 @@ export interface NormalizedProduct {
   unidad_medida: string; // Unidad por cada item
   descripcion_cantidad: string; // Descripción completa "12 x 250g"
   categoria_inferida?: string | null;
+  unidad_count?: number | null; // Cantidad de unidades, sobres, packs o cápsulas
   confidence?: number;
   rawText?: string;
   mayorista?: string;

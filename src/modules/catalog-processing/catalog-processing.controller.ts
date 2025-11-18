@@ -236,7 +236,7 @@ export class CatalogProcessingController {
         try {
           // 🎯 CAMBIO AQUÍ: Usamos el nuevo método para crear el texto de consulta
           const textoParaEmbedding = this.buildQueryTextForEmbedding(producto); // buildExactFilters debe filtrar SÓLO por peso, como lo tienes.
-          console.log(textoParaEmbedding);
+
           // FILTROS EXACTOS: solo unidad (peso)
           const filters = this.buildExactFilters(producto);
 
@@ -244,7 +244,7 @@ export class CatalogProcessingController {
             await this.excelProcessingService.searchSimilarProducts(
               textoParaEmbedding,
               10,
-              0.5,
+              0.78,
               filters,
             );
 
@@ -296,30 +296,38 @@ export class CatalogProcessingController {
   private buildQueryTextForEmbedding(producto: NormalizedProduct): string {
     const parts: string[] = [];
 
+    if (producto.categoria_inferida) {
+      parts.push(producto.categoria_inferida);
+    }
+
+    //2. Marca (Ej. "COCINERO")
+    if (producto.marca) {
+      parts.push(producto.marca);
+    }
+
     // 1. Producto Normalizado (Ej. "ACEITE GIRASOL COCINERO")
     if (producto.producto_normalizado) {
       parts.push(producto.producto_normalizado);
     }
 
-    // 2. Marca (Ej. "COCINERO")
-    if (producto.marca) {
-      parts.push(producto.marca);
+    if (producto.unidad_count != null) {
+      parts.push(producto.unidad_count.toString());
     }
 
     // 3. Tipo de Producto (CRÍTICO: Ej. "girasol", "0000").
     // Se incluye para que la DB vectorial sepa si es Entera o Descremada, etc.
-    if (
-      producto.tipo_producto &&
-      producto.tipo_producto.toLowerCase() !== 'standard'
-    ) {
-      parts.push(producto.tipo_producto);
-    }
+    // if (
+    //   producto.tipo_producto &&
+    //   producto.tipo_producto.toLowerCase() !== 'standard'
+    // ) {
+    //   parts.push(producto.tipo_producto);
+    // }
 
     // 4. Descripción de Cantidad/Peso (Ej. "1.5L")
     // Esto ayuda al embedding a diferenciar "Aceite 1L" de "Aceite 5L"
-    if (producto.descripcion_cantidad) {
-      parts.push(producto.descripcion_cantidad);
-    }
+    // if (producto.descripcion_cantidad) {
+    //   parts.push(producto.descripcion_cantidad);
+    // }
 
     // Unimos los componentes, limpiando espacios redundantes.
     const queryText = parts.join(' ');
@@ -381,16 +389,52 @@ export class CatalogProcessingController {
   private buildExactFilters(producto: NormalizedProduct): Record<string, any> {
     const filters: Record<string, any> = {};
 
-    // FILTRO 1: Marca exacta (DEBE SER IDÉNTICA A LA DEL PAYLOAD)
-    // if (producto.marca) {
-    //   filters.marca = producto.marca.toUpperCase().trim();
-    // }
+    // --- FILTRO 1: Conteo de Unidades Exacto (Pack) ---
+    // Si la extracción nos da un pack (ej: 6 botellas, pack de 100 sobres).
+    if (
+      producto.cantidad_pack &&
+      typeof producto.cantidad_pack === 'number' &&
+      producto.cantidad_pack > 1
+    ) {
+      // Aplicamos filtro de conteo y TERMINAMOS la función.
+      filters.unidad_count = producto.cantidad_pack;
+      this.logger.debug(
+        `Filtro Exacto: Agregando Conteo de Unidades (Pack): ${producto.cantidad_pack}`,
+      );
+      return filters;
+    }
 
-    // FILTRO 2: Unidad exacta (DEBE SER IDÉNTICA A LA DEL PAYLOAD)
+    // --- FILTRO 2: Unidad exacta (Peso/Volumen) ---
+    // Este bloque solo se ejecuta para UNIDADES SIMPLES (cantidad_pack = 1 o null).
     if (producto.unidad_medida) {
       let normalizedUnit = producto.unidad_medida;
 
+      // 🚨 PASO CRÍTICO: IDENTIFICAR Y OMITIR UNIDADES DE CONTEO
+      const countKeywords = [
+        'SOBRE',
+        'UNIDAD',
+        'PAR',
+        'PAQUETE',
+        'PACK',
+        'TABLETA',
+        'BLISTER',
+        'FRASCO',
+      ];
+      const isCountUnit = countKeywords.some((keyword) =>
+        normalizedUnit.toUpperCase().includes(keyword),
+      );
+
+      if (isCountUnit) {
+        // Si es una unidad de conteo (ej: "100 sobres", "1 par", "1 unidad"), NO APLICAMOS FILTRO EXACTO DE PESO.
+        // La búsqueda debe depender solo del embedding vectorial.
+        this.logger.debug(
+          `Filtro Exacto: Omitiendo filtro de Peso/Volumen: La unidad es de conteo (${normalizedUnit})`,
+        );
+        return filters; // Terminamos sin aplicar filtro exacto.
+      }
+
       // 1. Unificar a mayúsculas y quitar espacios
+      // ... (TU LÓGICA DE NORMALIZACIÓN DE UNIDADES DE PESO/VOLUMEN) ...
       normalizedUnit = normalizedUnit
         .toUpperCase()
         .replace(/\s+/g, '')
@@ -403,21 +447,16 @@ export class CatalogProcessingController {
         .replace('CC', 'ML')
         // Sólidos
         .replace(/KILOS/, 'KG')
-        .replace(/K$/, 'KG') // Asegura que '1K' se convierta en '1KG'
+        .replace(/K$/, 'KG')
         .replace(/GRAMOS/, 'G')
-        .replace(/GR/, 'G'); // Convierte '400GR' o '400gr' a '400G'
+        .replace(/GR/, 'G');
 
-      // Corregir un posible caso de 'KG' sin número (ej. el caso del queso S&P)
-      if (
-        normalizedUnit === 'KG' &&
-        producto.producto_normalizado.includes('xkg.')
-      ) {
-        // Asume '1KG' si la extracción dice solo 'kg' y es para productos de peso único.
-        // Esta es una solución temporal; el prompt de extracción debe arreglar esto.
-        normalizedUnit = '1KG';
-      }
+      // ... (Tu lógica adicional de normalización) ...
 
       filters.peso = normalizedUnit.trim();
+      this.logger.debug(
+        `Filtro Exacto: Agregando Peso Normalizado: ${filters.peso}`,
+      );
     }
 
     return filters;

@@ -40,32 +40,21 @@ export class EmbeddingService {
       this.logger.log(`Generating embeddings for ${texts.length} texts...`);
 
       const result = await this.genAI.models.embedContent({
-        model: 'models/text-embedding-004',
-        contents: texts.map((text) => ({ text })),
+        model: 'gemini-embedding-001',
+        contents: texts,
       });
 
       if (!result.embeddings || result.embeddings.length === 0) {
         throw new Error('No embeddings received from API');
       }
 
-      // Extraer los valores numéricos del embedding
-      const numericEmbeddings = result.embeddings.map((embedding) => {
-        // Si el embedding tiene una propiedad 'values', usarla
-        if (embedding.values && Array.isArray(embedding.values)) {
-          return embedding.values;
-        }
-        // Si es directamente un array, usarlo
-        if (Array.isArray(embedding)) {
-          return embedding;
-        }
-        // Si tiene otra estructura, loguear para debug
-        this.logger.warn('Unexpected embedding structure:', embedding);
-        throw new Error('Unexpected embedding structure');
-      });
+      const numericEmbeddings = result.embeddings
+        .map((embedding) => embedding.values) // ✅ FIX: Filtra los valores undefined y usa un type guard
+        .filter((values): values is number[] => values !== undefined);
 
       this.logger.debug('🔍 Processed embeddings:', {
         count: numericEmbeddings.length,
-        firstLength: numericEmbeddings[0]?.length,
+        firstLength: numericEmbeddings[0]?.length, // Esto DEBE ser 3072
         firstSample: numericEmbeddings[0]?.slice(0, 3),
       });
 
@@ -86,6 +75,6 @@ export class EmbeddingService {
   }
 
   getEmbeddingDimensions(): number {
-    return 768; // Gemini text-embedding-004 tiene 768 dimensiones
+    return 3072;
   }
 }

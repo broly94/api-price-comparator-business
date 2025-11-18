@@ -211,7 +211,7 @@ export class ExcelProcessingService {
   async searchSimilarProducts(
     productText: string,
     limit: number = 5,
-    scoreThreshold: number = 0.7,
+    scoreThreshold: number = 0.9,
     filters: Record<string, any> = {},
   ): Promise<any[]> {
     const embedding =

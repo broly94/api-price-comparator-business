@@ -16,7 +16,8 @@ export class GeminiMultimodalService {
 
   private initializeGemini() {
     try {
-      const apiKey = this.configService.get('GOOGLE_GEMINI_API_KEY');
+      //const apiKey = this.configService.get('GOOGLE_GEMINI_API_KEY');
+      const apiKey = 'AIzaSyCoRaUW81J700CxdByAJI0d0y7VYGnSxPA';
 
       if (!apiKey) {
         this.logger.warn('GOOGLE_GEMINI_API_KEY not found');
@@ -52,7 +53,7 @@ export class GeminiMultimodalService {
 
       // LLAMADA MULTIMODAL CORRECTA con base64
       const result = await this.genAI.models.generateContent({
-        model: 'gemini-2.5-pro', // Modelo multimodal
+        model: 'gemini-2.5-flash', // Modelo multimodal
         contents: [
           {
             role: 'user',
@@ -96,55 +97,141 @@ export class GeminiMultimodalService {
 
   private buildMultimodalPrompt(company?: string): string {
     return `
-      Eres un especialista en procesar catálogos de supermercados. Tu respuesta debe ser un array JSON que contenga solo productos válidos con precio visible.
+     Eres un especialista en procesar catálogos de supermercados${company ? ` ${company}` : ''}.
 
-      ANÁLISIS PRELIMINAR (Regla de Exclusión)
-      PÁGINA NO VÁLIDA: Si la imagen no contiene productos claramente identificables con precios, o es una página de separación, logo o contenido genérico sin ofertas directas (ej: "Vigencia", "Próximas Ofertas", "Solo logos"), DEVUELVE UN ARRAY JSON VACÍO: [].
-      PRODUCTO SIN PRECIO: Si un producto está visible pero su precio NO figura en la imagen (ej: está tachado, no se ve el número), EXCLÚYELO del array JSON.
+ANÁLISIS DE LA IMAGEN DEL CATÁLOGO:
 
-      INSTRUCCIONES CRÍTICAS DE EXTRACCIÓN Y CÁLCULO
-      2.1. PRECIO Y CANTIDAD (Regla de Oro: Unidad vs. Pack)
-      PRECIO VISIBLE (Pack/Unidad): precio_final_con_descuento es SIEMPRE el precio que se ve en el recuadro principal.
-      PRECIO POR UNIDAD EXPLÍCITO (NUEVA REGLA DE PRIORIDAD): Si la descripción del producto o el texto debajo del precio principal indica explícitamente el "precio por unidad" (ej: *precio por unidad $3.166,50), entonces:
-      El precio principal (precio_final_con_descuento) es el precio del PACK COMPLETO.
-      El precio_por_unidad es el valor indicado en el texto (ej: 3166.50).
-      La cantidad_pack se calcula: precio_final_con_descuento / precio_por_unidad.
-      PRECIO POR UNIDAD (DEFAULT): Se asume que el precio visible es por la UNIDAD INDIVIDUAL (cantidad_pack: 1), a menos que se cumpla la REGLA DE PACK (ver abajo).
-      INDICACIÓN DE CAJA/FORMATO: Si la descripción incluye x 750 CC.(6) o similar, el (6) solo indica la cantidad por caja/embalaje, NO que el precio sea por el pack. En este caso, cantidad_pack será 1 y precio_por_unidad será igual a precio_final_con_descuento.
-      REGLA DE PACK (Sólo si es explícito y NO hay precio unitario explícito):
-      El precio se considera por el PACK COMPLETO si se indica explícitamente en el texto, precio o imagen: Palabras clave: "Pack", "Caja", "Llevando el bulto", "Llevando X unidades", "Promo x [número]u", o el precio está sobre una imagen clara de la agrupación (ej: "12x9 pagas 9").
-      Si es PACK:
-      cantidad_pack: Cantidad de unidades en el pack.
-      precio_por_unidad: precio_final_con_descuento / cantidad_pack.
-      2.2. EXTRACCIÓN DE DATOS
-      MARCA: Nombre COMPLETO de la marca.
-      PRODUCTOS MÚLTIPLES/VARIETALES: Si una única línea o precio aplica a varios tipos de producto (ej: "Malbec - Chardon - Cab.", o "Blanco / Rosado"), debes crear una entrada JSON separada para cada tipo/varietal con el mismo precio visible.
-      DESCUENTOS: Si se indica un porcentaje (% OFF) o una promoción de cantidad (ej: "12x9 pagas 9"), calcula el porcentaje_descuento y el precio_sin_descuento (precio original). Si no hay descuento explícito, precio_sin_descuento = precio_final_con_descuento.
-      NORMALIZACIÓN DE UNIDADES: "250 GR" → "250g", "1,5 LT" → "1.5L", "1KG" → "1kg".
-      2.3. EXTRACCIÓN Y TIPOLOGÍA (CRÍTICO)
-      OBLIGATORIO: Determinar el tipo_producto específico.
-      INFERENCIA: Si el tipo no es visible, INFIÉRELO por el color, diseño o nombre más común.
-      Ejemplos: Aceites: "girasol" (default), "oliva". Harinas: "0000" (default), "000". Leche: "entera" (default), "descremada". Bebidas: "cola", "zero", "light".
-      RECURSO FINAL: SOLO usa "standard" si la inferencia es absolutamente imposible.
+INSTRUCCIONES CRÍTICAS:
+1. Analiza DETALLADAMENTE la imagen completa del catálogo
+2. Identifica TODOS los productos visibles con sus precios
+3. DETERMINA SI EL PRECIO ES POR PACK O POR UNIDAD:
+   - Si dice "12 x 250 GR" y precio $646.78 → EL PRECIO ES POR EL PACK COMPLETO
+   - El precio mostrado es el PRECIO FINAL CON DESCUENTO
+4. Busca indicadores de descuento como "%", "OFF", "oferta"
+5. EXTRACCIÓN DE MARCAS:
+   - La marca debe ser el nombre COMPLETO.
+   - Ejemplo: Si el producto es "HIGIENOL PLUS Papel...", la marca es "HIGIENOL PLUS".
+   - Ejemplo: "MAYONESA CADA DIA" → marca: "CADA DIA"
+   - Ejemplo: "AC.GIRASOL NATURA" → marca: "NATURA"
+   - Ejemplo: "PURE DE TOMATE ARCOR" → marca: "ARCOR"
+6. NORMALIZACIÓN DE UNIDADES:
+   - "250 GR" → "250g"
+   - "1,5 LT" → "1.5L"
+   - "1KG" → "1kg"
+   - "530 GR" → "530g"
+7. **EXTRACCIÓN O INFERENCIA DEL TIPO ESPECÍFICO (CRÍTICO):**
+   - **Es obligatorio** determinar el subtipo para aceites, harinas, lácteos, etc.
+   - **Si el tipo no es visible, debes INFERIRLO** por el color, diseño, o el nombre más común del producto en Argentina/Latinoamérica.
+   - **SOLO USA "standard" como último recurso** si la inferencia es imposible.
+   - Para aceites: "girasol", "mezcla", "oliva", "girasol alto oleico"
+   - Para harinas: "000", "0000", "integral", "leudante" 
+   - Para lácteos: "entera", "descremada", "semidescremada"
+   - Para bebidas: "cola", "naranja", "lima", "pomelo", "light", "zero"
+   - Para yogures: "natural", "saborizado", "griego", "bebible"
+   - Para arroz: "largo", "redondo", "integral", "yamaní"
+   - Para fideos: "tallarines", "moños", "tirabuzones", "coditos"
+   - Si no hay tipo específico, usar "standard"
 
-      FORMATO DE RESPUESTA
-      Responde EXCLUSIVAMENTE con el array JSON, sin texto adicional.
-      EJEMPLO DE EXTRACCION Y EXPOSICION DEL JSON:
-      [
-      {
-      "producto_normalizado": "nombre completo del producto",
-      "tipo_producto": "tipo específico (girasol, 000, cola, entera, etc.)",
-      "precio_final_con_descuento": 646.78,
-      "precio_sin_descuento": 760.92,
-      "precio_por_unidad": 53.90,
-      "porcentaje_descuento": 15,
-      "marca": "marca si existe",
-      "cantidad_pack": 12,
-      "unidad_medida": "250g",
-      "descripcion_cantidad": "12 x 250g",
-      "categoria_inferida": "categoría apropiada"
-      }
-      ]
+
+EJEMPLOS ESPECÍFICOS DE ESTA IMAGEN:
+
+FORMATO DE RESPUESTA - SOLO JSON:
+[
+  {
+    "producto_normalizado": "nombre completo del producto",
+    "tipo_producto": "tipo específico (girasol, 000, cola, entera, etc.)",
+    "precio_final_con_descuento": 646.78,     // PRECIO QUE SE VE EN LA IMAGEN (CON DESCUENTO)
+    "precio_sin_descuento": 760.92,           // PRECIO ORIGINAL ANTES DEL DESCUENTO (calcular)
+    "precio_por_unidad": 53.90,               // PRECIO POR UNIDAD INDIVIDUAL (precio_final / cantidad)
+    "porcentaje_descuento": 15,               // % DE DESCUENTO SI SE INDICA
+    "marca": "marca si existe",
+    "cantidad_pack": 12,                      // CANTIDAD DE UNIDADES EN EL PACK (número)
+    "unidad_medida": "250g",                  // UNIDAD DE MEDIDA POR CADA UNIDAD CON PRECISIÓN (250g, 1.5L, 1kg, etc)
+    "descripcion_cantidad": "12 x 250g",      // DESCRIPCIÓN COMPLETA DE LA CANTIDAD
+    "categoria_inferida": "categoría apropiada"
+  }
+]
+
+REGLAS DE CÁLCULO Y CONVERSIÓN:
+REGLAS DE CÁLCULO Y CONVERSIÓN:
+
+1. PARA PACKS CON CANTIDAD:
+   Ejemplo: "MAYONESA CADA DIA 12 x 250 GR" a $646.78
+   - precio_final_con_descuento: 646.78 (precio que se ve)
+   - precio_sin_descuento: 646.78 / 0.85 = 760.92 (asumiendo 15% descuento)
+   - precio_por_unidad: 646.78 / 12 = 53.90
+   - cantidad_pack: 12
+   - unidad_medida: "250g"
+   - descripcion_cantidad: "12 x 250g"
+
+2. PARA PRODUCTOS INDIVIDUALES:
+   Ejemplo: "LECHE ENTERA 1L" a $320
+   - precio_final_con_descuento: 320
+   - precio_sin_descuento: 320 (si no hay descuento)
+   - precio_por_unidad: 320
+   - cantidad_pack: 1
+   - unidad_medida: "1L"
+   - descripcion_cantidad: "1 unidad"
+
+3. REGLAS DE DESCUENTO:
+   - Si no se indica descuento, asumir precio_sin_descuento = precio_final_con_descuento
+   - Si se indica "% OFF" o similar, calcular el precio original
+   - Para el ejemplo de la imagen, asumir 15% de descuento típico en supermercados
+
+4. NORMALIZACIÓN DE UNIDADES:
+   - "250 GR" → "250g"
+   - "1,5 LT" → "1.5L" 
+   - "1KG" → "1kg"
+   - "530 GR" → "530g"
+
+5. EXTRACCIÓN DE MARCAS:
+   - "MAYONESA CADA DIA" → marca: "Cada Día"
+   - "AC.GIRASOL NATURA" → marca: "Natura"
+   - "PURE DE TOMATE ARCOR" → marca: "Arcor"
+
+REGLAS DE EXTRACCIÓN:
+- Busca en el nombre palabras clave que indiquen el tipo
+- Usa siempre minúsculas
+- **Si el producto es un aceite y no dice tipo, asume "girasol"** (el más común).
+- **Si el producto es leche y no dice tipo, asume "entera"** (la más común).
+- **SOLO** usa "standard" si es genérico (ej. Sprite común) o si no puedes inferir nada.
+
+6. EJEMPLOS DE TIPOS DE PRODUCTO:
+
+1. "ACEITE GIRASOL COCINERO" → tipo_producto: "girasol"
+2. "ACEITE MEZCLA COCINERO" → tipo_producto: "mezcla"
+3. "ACEITE OLIVA COCINERO" → tipo_producto: "oliva"
+4. "HARINA 000 PUREZA" → tipo_producto: "000"
+5. "HARINA 0000 PUREZA" → tipo_producto: "0000" 
+6. "HARINA INTEGRAL PUREZA" → tipo_producto: "integral"
+7. "LECHE ENTERA SANCOR" → tipo_producto: "entera"
+8. "LECHE DESCREMADA SANCOR" → tipo_producto: "descremada"
+9. "COCA COLA ORIGINAL" → tipo_producto: "cola"
+10. "COCA COLA ZERO" → tipo_producto: "zero"
+11. "SPRITE" → tipo_producto: "standard"
+11. "SPRITE ZERO" → tipo_producto: "zero"
+12. "YOGUR NATURAL" → tipo_producto: "natural"
+13. "YOGUR FRUTILLA" → tipo_producto: "saborizado"
+14. "ARROZ LARGO FINO" → tipo_producto: "largo"
+15. "FIDEOS TALLARINES" → tipo_producto: "tallarines"
+
+EJEMPLOS ESPECÍFICOS DE ESTA IMAGEN:
+
+1. "MAYONESA CADA DIA 12 x 250 GR" - $646.78
+   → precio_final: 646.78, precio_sin_descuento: 760.92, precio_por_unidad: 53.90
+
+2. "AC.GIRASOL NATURA 12 x 1,5 LT" - $3788.11  
+   → precio_final: 3788.11, precio_sin_descuento: 4456.60, precio_por_unidad: 315.68
+
+3. "HARINA OOO CASERITA 10 x 1KG" - $601.43
+   → precio_final: 601.43, precio_sin_descuento: 707.56, precio_por_unidad: 60.14
+
+IMPORTANTE: 
+- precio_final_con_descuento es SIEMPRE el precio que se ve en la imagen
+- precio_por_unidad es precio_final dividido la cantidad del pack
+- Si no puedes calcular descuentos, usa precio_sin_descuento = precio_final
+
+Responde EXCLUSIVAMENTE con el array JSON, sin texto adicional.
     `;
     /*return `
 Eres un especialista en procesar catálogos de supermercados${company ? ` ${company}` : ''}.

@@ -8,16 +8,19 @@ import {
   VectorSearchResult,
   VectorDbService,
 } from '@/common/interfaces/catalog-processing.interface';
+import { EmbeddingService } from '@modules/catalog-processing/services/embedding.service';
 
 @Injectable()
 export class QdrantService implements VectorDbService, OnModuleInit {
   private readonly logger = new Logger(QdrantService.name);
   private client: QdrantClient;
   private collectionName = 'supermarket_products';
-  private vectorSize = 768;
   private isInitialized = false;
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private embeddingService: EmbeddingService,
+  ) {}
 
   async onModuleInit() {
     await this.initialize();
@@ -76,7 +79,7 @@ export class QdrantService implements VectorDbService, OnModuleInit {
         // Crear colección
         await this.client.createCollection(this.collectionName, {
           vectors: {
-            size: this.vectorSize,
+            size: this.embeddingService.getEmbeddingDimensions(),
             distance: 'Cosine',
           },
         });
@@ -182,9 +185,12 @@ export class QdrantService implements VectorDbService, OnModuleInit {
           throw new Error(`Invalid vector for product ${product.id}`);
         }
 
-        if (product.vector.length !== this.vectorSize) {
+        if (
+          product.vector.length !==
+          this.embeddingService.getEmbeddingDimensions()
+        ) {
           this.logger.warn(
-            `Vector size mismatch for product ${product.id}: expected ${this.vectorSize}, got ${product.vector.length}`,
+            `Vector size mismatch for product ${product.id}: expected ${this.embeddingService.getEmbeddingDimensions()}, got ${product.vector.length}`,
           );
         }
 
