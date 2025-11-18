@@ -1,76 +1,21 @@
-# 1. BUILD STAGE: Usar la versión slim de Debian para mejor soporte de sharp
-FROM node:18-slim AS builder
+# ---- Base ----
+FROM node:22-alpine AS base
+WORKDIR /usr/src/app
+COPY package.json .npmrc ./
 
-WORKDIR /app
+# ---- Dependencies ----
+FROM base AS dependencies
+RUN npm install --omit=dev
 
-# Instalar herramientas de compilación que sharp pueda necesitar
-# Aunque en slim a menudo no es necesario, es más seguro.
-# También instala libvips
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    libvips-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar package.json y lock file
-COPY package.json package-lock.json* ./
-
-# Instalar dependencias
+# ---- Build ----
+FROM base AS build
+COPY . .
 RUN npm install
-
-# Copiar el código y construir
-COPY src ./src 
-COPY tsconfig.json ./
-
 RUN npm run build
 
-# 2. PRODUCTION STAGE: Usar la misma base limpia
-FROM node:18-slim
-
-WORKDIR /app
-
-# Instalar el runtime de VIPS (a menudo llamado libvips)
-# Esto es para asegurar que las librerías compartidas estén presentes
-RUN apt-get update && apt-get install -y --no-install-recommends libvips \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copiar package.json
-COPY package.json ./
-
-# Instalar dependencias de producción (para sharp)
-RUN npm install --only=production
-
-# Copiar build
-COPY --from=builder /app/dist ./dist
-
+# ---- Release ----
+FROM dependencies AS release
+COPY --from=build /usr/src/app/dist ./dist
+COPY vision_key.json ./
 EXPOSE 3002
-
-# Crear usuario de menor privilegio
-RUN groupadd -r nodejs && useradd -r -g nodejs nestjs
-USER nestjs
-
 CMD ["node", "dist/main"]
-
-# --- NUEVO STAGE DE DESARROLLO (DEBE AGREGARSE AL FINAL) ---
-FROM node:18-slim AS development
-
-WORKDIR /app
-
-# Instalar dependencias de desarrollo (incluyendo nodemon y typescript)
-COPY package.json package-lock.json* ./
-RUN npm install
-
-# Copiar configuración de NestJS
-COPY tsconfig.json ./
-
-# Exponer el puerto de la aplicación (3002) y el puerto de debug (9229)
-EXPOSE 3002
-EXPOSE 9229
-
-# Crear usuario de menor privilegio (Opcional, pero bueno para consistencia)
-RUN groupadd -r nodejs && useradd -r -g nodejs nestjs
-USER nestjs

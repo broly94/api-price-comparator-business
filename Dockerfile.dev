@@ -1,0 +1,24 @@
+# Usa una imagen base de Node.js. La versión 20-slim es ligera y reciente.
+FROM node:20-slim
+
+# Establece el directorio de trabajo dentro del contenedor.
+WORKDIR /usr/src/app
+
+# Copia package.json y package-lock.json (o pnpm-lock.yaml, etc.)
+# Esto aprovecha el cache de capas de Docker. La reinstalación de dependencias
+# solo ocurrirá si estos archivos cambian.
+COPY package*.json ./
+
+# Instala git
+RUN apt-get update && apt-get install -y git
+
+# Instala TODAS las dependencias, incluyendo las de desarrollo.
+RUN npm install
+
+# Copia el resto del código fuente de tu aplicación.
+COPY . .
+
+# El comando por defecto para iniciar el contenedor.
+# Ejecuta el script "start:dev" que usa nodemon (a través de "nest start --watch")
+# para reiniciar la aplicación cuando detecta cambios en los archivos.
+CMD ["npm", "run", "start:dev"]
