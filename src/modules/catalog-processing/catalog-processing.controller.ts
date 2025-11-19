@@ -28,6 +28,7 @@ import { ExcelProcessingService } from '@/modules/catalog-processing/services/ex
 import { EmbeddingService } from './services/embedding.service';
 import { QdrantService } from './services/qdrant.service';
 import { EtlProxyService } from './services/etl-proxy.service';
+import { multerOptions } from '@/common/multer.options';
 
 @Controller('catalog-processing')
 export class CatalogProcessingController {
@@ -93,7 +94,7 @@ export class CatalogProcessingController {
 
     try {
       this.logger.log(
-        `🖼️ MULTIMODAL Processing for company: ${body.company || 'unknown'}`,
+        `🖼️ MULTIMODAL Processing for company: ${body.company || 'unknown'} `,
       );
 
       if (!image) {
@@ -154,8 +155,14 @@ export class CatalogProcessingController {
     total: number;
     message: string;
   }> {
+    console.log(excelFile);
     try {
-      this.logger.log(`📤 Proxying Excel upload: ${excelFile.originalname}`);
+      if (!excelFile) {
+        console.log(excelFile);
+        throw new BadRequestException('Excel file is required');
+      }
+
+      this.logger.log(`📤 Proxying Excel uploading: ${excelFile.originalname}`);
 
       if (!excelFile) {
         throw new BadRequestException('Excel file is required');

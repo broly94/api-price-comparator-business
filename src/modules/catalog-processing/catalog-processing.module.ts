@@ -1,6 +1,7 @@
 // src/modules/catalog-processing/catalog-processing.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { MulterModule } from '@nestjs/platform-express';
 import { CatalogProcessingController } from './catalog-processing.controller';
 import { ImagePreprocessorService } from './services/image-preprocessor.service';
 import { GeminiMultimodalService } from './services/gemini-multimodal.service';
@@ -13,9 +14,18 @@ import { ExcelProcessingService } from './services/excel-processing.service';
 import { ProductNormalizationService } from './services/product-normalization.service';
 import { QdrantController } from './qdrant.controller';
 import { EtlProxyService } from './services/etl-proxy.service';
+import { memoryStorage } from 'multer';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [
+    ConfigModule,
+    MulterModule.register({
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // Límite de 10 MB para cualquier archivo en este módulo
+      },
+    }),
+  ],
   controllers: [CatalogProcessingController, QdrantController],
   providers: [
     //GoogleVisionService,

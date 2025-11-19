@@ -31,6 +31,8 @@ export class QdrantService implements VectorDbService, OnModuleInit {
       const url = this.configService.get('QDRANT_URL');
       const apiKey = this.configService.get('QDRANT_API_KEY');
 
+      console.log(url);
+
       if (!url) {
         this.logger.error('QDRANT_URL is not defined in environment variables');
         return;
