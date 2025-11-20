@@ -1,7 +1,7 @@
 // src/modules/catalog-processing/services/gemini-multimodal.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { NormalizedProduct } from '../../../common/interfaces/catalog-processing.interface';
 
 @Injectable()
@@ -68,6 +68,9 @@ export class GeminiMultimodalService {
             ],
           },
         ],
+        config: {
+          temperature: 0,
+        },
       });
 
       const text = result.text;

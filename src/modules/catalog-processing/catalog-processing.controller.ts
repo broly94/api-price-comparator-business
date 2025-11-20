@@ -250,8 +250,8 @@ export class CatalogProcessingController {
           const coincidencias =
             await this.excelProcessingService.searchSimilarProducts(
               textoParaEmbedding,
-              10,
-              0.78,
+              20,
+              0.75,
               filters,
             );
 

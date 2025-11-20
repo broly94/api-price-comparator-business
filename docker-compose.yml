@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  rag_ia_backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: rag_ia_backend
+    ports:
+      - "3002:3002"
+    volumes:
+      # Mantiene el node_modules instalado en el contenedor (para binarios de Linux como sharp)
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      # CRÍTICO: Usa el nombre del servicio de Docker Compose (qdrant-db) como hostname
+      - QDRANT_URL=http://qdrant-db:6333
+      - ETL_SERVICE_URL=http://host.docker.internal:8001
+      # Puedes añadir otras variables aquí si es necesario
+      # - QDRANT_API_KEY=tu_api_key_si_existe
+
+    command: npm run start:dev
+
+    # ------------------------------------------------------------------
+    # SECCIÓN DE HOT-RELOAD CON DOCKER COMPOSE WATCH
+    develop:
+      watch:
+        # Bloque 1: Sincronización del Código Fuente
+        - action: sync
+          path: .
+          target: /usr/src/app
+          ignore:
+            - node_modules/
+            - dist/
+            - .git/
+            - Dockerfile*
+            - docker-compose.yaml
+
+        # Bloque 2: Reconstrucción en caso de cambio de dependencias
+        - action: rebuild
+          path: package.json
+    # ------------------------------------------------------------------
+
+  qdrant-db:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_server
+    # Exponemos el puerto para poder acceder a la interfaz web o API desde la máquina local si es necesario
+    ports:
+      - "6333:6333" # API REST
+      - "6334:6334" # API gRPC
+    # Mapeamos un volumen para que los datos de Qdrant persistan entre reinicios
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+# Definición de volúmenes persistentes
+volumes:
+  qdrant_data:
+    driver: local
