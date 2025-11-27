@@ -1,9 +1,7 @@
 export interface NormalizedProduct {
   producto_normalizado: string;
   tipo_producto?: string | null; // Tipo específico (girasol, 000, cola, entera, etc.)
-  precio_final_con_descuento: number; // Precio que se ve en imagen
-  precio_sin_descuento: number; // Precio original sin descuento
-  precio_por_unidad: number; // Precio por unidad individual
+  precio_final_catalogo: number; // Precio que se ve en imagen
   porcentaje_descuento?: number | null; // % de descuento si se indica
   marca?: string | null;
   cantidad_pack: number; // Cantidad en el pack (1 si es individual)

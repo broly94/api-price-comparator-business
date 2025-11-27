@@ -231,7 +231,12 @@ export class CatalogProcessingController {
           body.company,
         );
 
-      const productosConMayorista = productosExtraidos.map((p) => ({
+      // 2. Normalizar productos extraídos (calcular precio unitario)
+      const productosNormalizados = productosExtraidos.map((p) =>
+        this.normalizeExtractedProduct(p),
+      );
+
+      const productosConMayorista = productosNormalizados.map((p) => ({
         ...p,
         mayorista,
       }));
@@ -250,15 +255,21 @@ export class CatalogProcessingController {
           const coincidencias =
             await this.excelProcessingService.searchSimilarProducts(
               textoParaEmbedding,
-              20,
-              0.75,
+              10,
+              0.65,
               filters,
             );
 
+          // 🎯 PASO DE INTEGRACIÓN: APLICAR EL BOOST Y FILTRAR
+          const coincidenciasConBoost = this.aplicarBoostYFiltroScore(
+            producto,
+            coincidencias,
+          );
+
           resultadosPreview.push({
             producto_extraido: producto,
-            coincidencias: coincidencias,
-            total_coincidencias: coincidencias.length,
+            coincidencias: coincidenciasConBoost,
+            total_coincidencias: coincidenciasConBoost.length,
           });
         } catch (error) {
           resultadosPreview.push({
@@ -270,22 +281,35 @@ export class CatalogProcessingController {
         }
       }
 
-      const data: ProcessCatalogData = {
+      const dataParaLLM: ProcessCatalogData = {
         productos_procesados: productosConMayorista.length,
-        preview: resultadosPreview,
+        preview: resultadosPreview, // Usamos los datos ya con score_ajustado
       };
 
-      const dataFiltrada = this.aplicarFiltroPorScore(data);
+      this.logger.log(
+        `🤖 Enviando ${dataParaLLM.preview.length} productos al LLM para Re-ranking y Filtro Fino...`,
+      );
+
+      // 🎯 PASO FINAL: LLAMADA AL LLM RE-RANKER
+      const dataFiltradaPorLLM =
+        await this.geminiMultimodalService.processAllReRanking(
+          dataParaLLM, // Se envía la estructura completa
+        );
+
+      // La respuesta del LLM ya tiene los arrays 'coincidencias' filtrados (o vacíos)
+      const finalProcessingTime = Date.now() - startTime;
 
       return {
         success: true,
         data: {
           productos_procesados: productosConMayorista.length,
-          preview: dataFiltrada,
+          preview: dataFiltradaPorLLM.preview,
         },
         metadata: {
-          processingTime: Date.now() - startTime,
+          processingTime: finalProcessingTime,
           mayorista,
+          method: 'multimodal_re_ranking',
+          model: 'gemini-2.5-pro',
         },
       };
     } catch (error) {
@@ -294,6 +318,54 @@ export class CatalogProcessingController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  private normalizeExtractedProduct(producto: any): any {
+    const pack = producto.cantidad_pack_venta || 1;
+    const precioCatalogo = producto.precio_final_catalogo;
+
+    // Calcula el precio unitario para la consulta
+    const precioUnitarioNormalizado = precioCatalogo / pack;
+
+    return {
+      ...producto,
+      // Nuevo campo para el precio unitario calculado que se usará para matching
+      precio_unitario_normalizado: parseFloat(
+        precioUnitarioNormalizado.toFixed(4),
+      ),
+    };
+  }
+
+  private aplicarBoostYFiltroScore(
+    productoExtraido: any,
+    coincidencias: any[], // El resultado crudo de Qdrant
+  ): any[] {
+    const BOOST_VALUE = 0.1;
+    // Umbral de score base para limpiar el ruido bajo, ya que el LLM hará la discriminación fina
+    const MIN_SCORE_THRESHOLD = 0.65;
+
+    // 1. Calcular el score_ajustado para cada coincidencia
+    const coincidenciasConBoost = coincidencias.map((c) => {
+      let scoreAjustado = c.score;
+
+      // Se asume que c.payload.marca y productoExtraido.marca existen
+      if (
+        productoExtraido.marca &&
+        c.payload.marca &&
+        c.payload.marca.toUpperCase() === productoExtraido.marca.toUpperCase()
+      ) {
+        // Aplicar el BOOST si la marca coincide
+        scoreAjustado += BOOST_VALUE;
+      }
+
+      return {
+        ...c,
+        score_ajustado: parseFloat(scoreAjustado.toFixed(5)), // Asegurar formato de punto flotante
+      };
+    });
+
+    // 2. Aplicar un filtro de score base para no pasar a Gemini coincidencias muy irrelevantes (ej: < 0.65)
+    return coincidenciasConBoost.filter((c) => c.score >= MIN_SCORE_THRESHOLD);
   }
 
   /**
@@ -321,21 +393,6 @@ export class CatalogProcessingController {
       parts.push(producto.unidad_count.toString());
     }
 
-    // 3. Tipo de Producto (CRÍTICO: Ej. "girasol", "0000").
-    // Se incluye para que la DB vectorial sepa si es Entera o Descremada, etc.
-    // if (
-    //   producto.tipo_producto &&
-    //   producto.tipo_producto.toLowerCase() !== 'standard'
-    // ) {
-    //   parts.push(producto.tipo_producto);
-    // }
-
-    // 4. Descripción de Cantidad/Peso (Ej. "1.5L")
-    // Esto ayuda al embedding a diferenciar "Aceite 1L" de "Aceite 5L"
-    // if (producto.descripcion_cantidad) {
-    //   parts.push(producto.descripcion_cantidad);
-    // }
-
     // Unimos los componentes, limpiando espacios redundantes.
     const queryText = parts.join(' ');
 
@@ -344,57 +401,19 @@ export class CatalogProcessingController {
     return queryText.replace(/\s+/g, ' ').trim();
   }
 
-  /**
-   * MÉTODO AUXILIAR: Aplica el filtro de score a las coincidencias
-   * Esto garantiza que solo se muestren resultados con alta relevancia semántica.
-   */
-  private aplicarFiltroPorScore(data: ProcessCatalogData): ProcessCatalogData {
-    const MIN_SCORE = 0.7; // Umbral base
-    const BOOST_MARCA = 0.1; // 🎯 +0.10 por coincidencia de marca (Aumentamos el boost al ser el único factor)
-
-    this.logger.log(
-      `Aplicando filtro y boost SOLO por Marca. Base MIN_SCORE: ${MIN_SCORE}`,
-    );
-
-    data.preview.forEach((item) => {
-      const productoExtraido = item.producto_extraido;
-
-      item.coincidencias.forEach((coincidencia) => {
-        let finalScore = coincidencia.score;
-
-        // Normalización a MAYÚSCULAS para comparación (CRÍTICO)
-        const extMarca = productoExtraido.marca?.toUpperCase().trim() || '';
-        const coinMarca =
-          coincidencia.payload.marca?.toUpperCase().trim() || '';
-
-        // 1. BOOST POR MARCA
-        if (extMarca && extMarca === coinMarca) {
-          finalScore += BOOST_MARCA;
-          this.logger.debug(
-            `Boost Marca aplicado (+${BOOST_MARCA}) en id ${coincidencia.id}. Nuevo score: ${finalScore}`,
-          );
-        }
-
-        // Asignar el score final al campo (score_ajustado debe existir en VectorSearchResult)
-        (coincidencia as any).score_ajustado = finalScore;
-      });
-
-      // 2. FILTRAR USANDO EL SCORE AJUSTADO
-      item.coincidencias = item.coincidencias.filter(
-        // Filtra usando el score ajustado. Si no existe, usa el original.
-        (coincidencia) =>
-          ((coincidencia as any).score_ajustado || coincidencia.score) >=
-          MIN_SCORE,
-      );
-
-      item.total_coincidencias = item.coincidencias.length;
-    });
-
-    return data;
-  }
-
   private buildExactFilters(producto: NormalizedProduct): Record<string, any> {
     const filters: Record<string, any> = {};
+
+    // =========================================================================
+    // 🎯 FILTRO ESTRICTO 0: MARCA (si la confianza es alta)
+    // =========================================================================
+    // Aplicamos el filtro de marca si la extracción de Gemini fue con alta confianza (ej: >= 0.90)
+    // Esto es crucial para reducir el espacio de búsqueda.
+    if (producto.marca && producto.confidence && producto.confidence >= 0.9) {
+      // Se asume que en Qdrant el campo se llama 'marca' y es case-insensitive (o se normaliza a mayúsculas)
+      filters.marca = producto.marca.toUpperCase();
+      // Nota: Si usas GESCOM, este filtro puede ser por 'codigo_proveedor' o 'rubro' si la marca es inconsistente.
+    }
 
     // --- FILTRO 1: Conteo de Unidades Exacto (Pack) ---
     // Si la extracción nos da un pack (ej: 6 botellas, pack de 100 sobres).
