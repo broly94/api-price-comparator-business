@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: rag_ia_backend
+    container_name: price-comparator-business
     ports:
       - "3002:3002"
     volumes:
@@ -14,6 +14,12 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3002
+      - ACCESS_DATA_TYPE=mssql
+      - ACCESS_DATA_HOST=192.168.0.14 # ⬅️ USAMOS LA IP VERIFICADA
+      - ACCESS_DATA_PORT=1433 # Puerto estándar de SQL Server
+      - ACCESS_DATA_USER=leonel # ⬅️ Tu usuario SQL
+      - ACCESS_DATA_PASS="admin" # ⬅️ Probamos con contraseña vacía (asumiendo autenticación SQL sin pass)
+      - ACCESS_DATA_NAME=idea # ⬅️ DEBES CAMBIAR ESTO: Nombre de la base de datos GESCOM
       # CRÍTICO: Usa el nombre del servicio de Docker Compose (qdrant-db) como hostname
       - QDRANT_URL=http://qdrant-db:6333
       - ETL_SERVICE_URL=http://host.docker.internal:8001

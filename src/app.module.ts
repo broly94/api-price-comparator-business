@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { CatalogProcessingModule } from './modules/catalog-processing/catalog-processing.module';
+import { CatalogProcessingModule } from './catalog-processing/catalog-processing.module';
+import { DataAccessModule } from './data-access/data-access.module';
+import { DataSourceConfig } from './config/data-source';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
   imports: [
@@ -8,10 +11,16 @@ import { CatalogProcessingModule } from './modules/catalog-processing/catalog-pr
       isGlobal: true,
       envFilePath:
         process.env.NODE_ENV === 'production' ? undefined : '.env.development',
-      // O, de forma más simple, permite que las variables del sistema anulen los archivos .env
+      // O, de forma máss simple, permite que las variables del sistema anulen los archivos .env
       ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
+    TypeOrmModule.forRoot({
+      ...DataSourceConfig,
+      retryAttempts: 10,
+      retryDelay: 3000,
+    }),
     CatalogProcessingModule,
+    DataAccessModule,
   ],
   providers: [],
 })
